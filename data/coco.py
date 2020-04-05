@@ -109,10 +109,11 @@ class COCODetection(data.Dataset):
         img_id = self.ids[index]
 
         if self.has_gt:
+            target = self.coco.imgToAnns[img_id]
             ann_ids = self.coco.getAnnIds(imgIds=img_id)
 
             # Target has {'segmentation', 'area', iscrowd', 'image_id', 'bbox', 'category_id'}
-            target = [x for x in self.coco.loadAnns(ann_ids) if x['image_id'] == img_id]
+            target = self.coco.loadAnns(ann_ids)
         else:
             target = []
 

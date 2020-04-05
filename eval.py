@@ -20,14 +20,21 @@ import random
 import cProfile
 import pickle
 import json
-import os
+import os, errno
 from collections import defaultdict
 from pathlib import Path
 from collections import OrderedDict
 from PIL import Image
-
+import base64
 import matplotlib.pyplot as plt
 import cv2
+import circle_fit as cf
+from tempfile import NamedTemporaryFile
+import shutil
+import csv
+
+
+
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -113,7 +120,11 @@ def parse_args(argv=None):
                         help='When displaying / saving video, draw the FPS on the frame')
     parser.add_argument('--emulate_playback', default=False, dest='emulate_playback', action='store_true',
                         help='When saving a video, emulate the framerate that you\'d get running in real-time mode.')
-
+    
+    
+    parser.add_argument('--save_pupil_evaluate_image', default=True, help='saving a Image,')
+                        
+                        
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False, display_fps=False,
                         emulate_playback=False)
@@ -126,6 +137,10 @@ def parse_args(argv=None):
     
     if args.seed is not None:
         random.seed(args.seed)
+    
+    result_export_path = "./results/pupil_Detection_result/predicted_img/"
+    shutil.rmtree(result_export_path, ignore_errors=True)
+    os.makedirs(result_export_path)
 
 iou_thresholds = [x / 100 for x in range(50, 100, 5)]
 coco_cats = {} # Call prep_coco_cats to fill this
@@ -261,6 +276,161 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
     
     return img_numpy
 
+
+def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_color=False, mask_alpha=0.45, fps_str="", image_idx=""):
+    """
+    Note: If undo_transform=False then im_h and im_w are allowed to be None.
+    """
+    
+    if undo_transform:
+        img_numpy = undo_image_transformation(img, w, h)
+        img_gpu = torch.Tensor(img_numpy).cuda()
+    else:
+        img_gpu = img / 255.0
+        h, w, _ = img.shape
+    
+    
+    
+    with timer.env('Postprocess'):
+        save = cfg.rescore_bbox
+        cfg.rescore_bbox = True
+        t = postprocess(dets_out, w, h, visualize_lincomb = args.display_lincomb,
+                                        crop_masks        = args.crop,
+                                        score_threshold   = args.score_threshold)
+        cfg.rescore_bbox = save
+
+    with timer.env('Copy'):
+        idx = t[1].argsort(0, descending=True)[:args.top_k]
+
+        
+        if cfg.eval_mask_branch:
+            # Masks are drawn on the GPU, so don't copy
+            masks = t[3][idx]
+        
+        classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
+        
+
+    num_dets_to_consider = min(args.top_k, classes.shape[0])
+    for j in range(num_dets_to_consider):
+        if scores[j] < args.score_threshold:
+            num_dets_to_consider = j
+            break
+
+    # Quick and dirty lambda for selecting the color for a particular index
+    # Also keeps track of a per-gpu color cache for maximum speed
+    def get_color(j, on_gpu=None):
+        global color_cache
+        color_idx = (classes[j] * 5 if class_color else j * 5) % len(COLORS)
+        
+        if on_gpu is not None and color_idx in color_cache[on_gpu]:
+            return color_cache[on_gpu][color_idx]
+        else:
+            color = COLORS[color_idx]
+            if not undo_transform:
+                # The image might come in as RGB or BRG, depending
+                color = (color[2], color[1], color[0])
+            if on_gpu is not None:
+                color = torch.Tensor(color).to(on_gpu).float() / 255.
+                color_cache[on_gpu][color_idx] = color
+            return color
+
+    # First, draw the masks on the GPU where we can do it really fast
+    # Beware: very fast but possibly unintelligible mask-drawing code ahead
+    # I wish I had access to OpenGL or Vulkan but alas, I guess Pytorch tensor operations will have to suffice
+    
+    if args.display_masks and cfg.eval_mask_branch and num_dets_to_consider > 0:
+        # After this, mask is of size [num_dets, h, w, 1]
+        masks = masks[:num_dets_to_consider, :, :, None]
+        
+        for i in range(num_dets_to_consider):
+        
+            msk = masks[i, :, :, None]
+            mask = msk.view(1, 192, 192, 1)
+            img_gpu_masked = img_gpu * (mask.sum(dim=0) >= 1).float().expand(-1, -1, 3)
+            img_masked_numpy = (img_gpu_masked * 255).byte().cpu().numpy()               
+            img_masked_numpy = img_masked_numpy[:,:,0].astype('uint8')
+            
+            contours, _ = cv2.findContours(img_masked_numpy.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            areas = [cv2.contourArea(c) for c in contours]
+            sorted_areas = np.sort(areas)
+            cnt=contours[areas.index(sorted_areas[-1])] #the biggest contour
+            r = cv2.boundingRect(cnt)
+            ellipse = cv2.fitEllipse(cnt)
+
+   
+        
+    if args.display_fps:
+            # Draw the box for the fps on the GPU
+        font_face = cv2.FONT_HERSHEY_DUPLEX
+        font_scale = 0.6
+        font_thickness = 1
+
+        text_w, text_h = cv2.getTextSize(fps_str, font_face, font_scale, font_thickness)[0]
+
+        img_gpu[0:text_h+8, 0:text_w+8] *= 0.6 # 1 - Box alpha
+
+
+    # Then draw the stuff that needs to be done on the cpu
+    # Note, make sure this is a uint8 tensor or opencv will not anti alias text for whatever reason
+    img_numpy = (img_gpu * 255).byte().cpu().numpy()
+    
+    
+    
+    
+
+    
+    if args.display_fps:
+        # Draw the text on the CPU
+        text_pt = (4, text_h + 2)
+        text_color = [255, 255, 255]
+
+        cv2.putText(img_numpy, fps_str, text_pt, font_face, font_scale, text_color, font_thickness, cv2.LINE_AA)
+    
+    if num_dets_to_consider == 0:
+        return img_numpy
+
+
+    j = 0 
+    x1, y1, x2, y2 = boxes[j, :]
+    color = get_color(j)
+    score = scores[j]
+
+
+        
+    _class = cfg.dataset.class_names[classes[j]]
+    text_str = '%s: %.2f' % (_class, score) if args.display_scores else _class
+    
+    font_face = cv2.FONT_HERSHEY_DUPLEX
+    font_scale = 0.6
+    font_thickness = 1
+
+    text_w, text_h = cv2.getTextSize(text_str, font_face, font_scale, font_thickness)[0]
+
+    text_pt = (x1, y1 - 3)
+    text_color = [255, 255, 255]
+
+    cv2.rectangle(img_numpy, (x1, y1), (x1 + text_w, y1 - text_h - 4), color, -1)
+    cv2.putText(img_numpy, text_str, text_pt, font_face, font_scale, text_color, font_thickness, cv2.LINE_AA)
+        
+            
+            
+    result_export_path = "./results/pupil_Detection_result/predicted_img/"
+    
+    if image_idx !="False" :
+    
+        cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
+        (xc,yc),(ma,MA),angle = ellipse
+        update_csv_mask_result(str(image_idx), xc, yc, ma)
+        cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
+       
+        update_csv_box_result(image_idx, x1, y1, x2, y2)
+        
+        if  args.save_pupil_evaluate_image  == "True":
+          
+            cv2.imwrite(result_export_path+str(image_idx)+".jpg", img_numpy)
+                
+    return img_numpy
+
 def prep_benchmark(dets_out, h, w):
     with timer.env('Postprocess'):
         t = postprocess(dets_out, w, h, crop_masks=args.crop, score_threshold=args.score_threshold)
@@ -295,6 +465,91 @@ def get_coco_cat(transformed_cat_id):
 def get_transformed_cat(coco_cat_id):
     """ transformed_cat_id is [0,80) as indices in cfg.dataset.class_names """
     return coco_cats_inv[coco_cat_id]
+    
+    
+def update_csv_mask_result(row_id, x, y, r):
+    filename = './results/pupil_Detection_result/data_info.csv'
+    tempfile = NamedTemporaryFile(mode='w', delete=False)               
+
+    fields = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_R', 'Predict_Elipse_X', 'Predict_Elipse_Y', 'Predict_Elipse_R',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+
+    with open(filename, 'r') as csvfile, tempfile:
+        reader = csv.DictReader(csvfile, fieldnames=fields)
+        writer = csv.DictWriter(tempfile, fieldnames=fields)
+        for row in reader:
+            if row['ID'] == str(row_id):
+
+                row['Predict_Elipse_X'] = x
+                row['Predict_Elipse_Y'] = y
+                row['Predict_Elipse_R'] = r
+                
+                row['True_Elipse_X'] = row['True_Elipse_X'] 
+                row['True_Elipse_Y'] =  row['True_Elipse_Y'] 
+                row['True_Elipse_R'] =  row['True_Elipse_R'] 
+                row['True_Box_X1'] =  row['True_Box_X1']
+                row['True_Box_Y1'] =  row['True_Box_Y1']
+                row['True_Box_X2'] = row['True_Box_X2'] 
+                row['True_Box_Y2'] = row['True_Box_Y2'] 
+                row['True_Box_Center_X'] = row['True_Box_Center_X']
+                row['True_Box_Center_Y'] = row['True_Box_Center_Y']
+                row['Predict_Box_X1'] = row['Predict_Box_X1'] 
+                row['Predict_Box_Y1'] = row['Predict_Box_Y1'] 
+                row['Predict_Box_X2'] = row['Predict_Box_X2']
+                row['Predict_Box_Y2'] = row['Predict_Box_Y2']
+                row['Predict_Box_Center_X'] = row['Predict_Box_Center_X']
+                row['Predict_Box_Center_Y'] = row['Predict_Box_Center_Y']
+            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'], 'True_Elipse_R': row['True_Elipse_R'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_R': row['Predict_Elipse_R'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_X2'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
+            writer.writerow(row)
+
+    shutil.move(tempfile.name, filename)
+    
+    
+
+    
+def update_csv_box_result(row_id, x1, y1, x2, y2):
+    filename = './results/pupil_Detection_result/data_info.csv'
+    tempfile = NamedTemporaryFile(mode='w', delete=False)               
+
+    fields = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_R', 'Predict_Elipse_X', 'Predict_Elipse_Y', 'Predict_Elipse_R',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+
+    with open(filename, 'r') as csvfile, tempfile:
+        reader = csv.DictReader(csvfile, fieldnames=fields)
+        writer = csv.DictWriter(tempfile, fieldnames=fields)
+        for row in reader:
+            if row['ID'] == str(row_id):
+
+               
+                
+                row['Predict_Box_X1'] = x1
+                row['Predict_Box_Y1'] = y1
+                row['Predict_Box_X2'] = x2
+                row['Predict_Box_Y2'] = y2
+                
+                row['True_Elipse_X'] = row['True_Elipse_X'] 
+                row['True_Elipse_Y'] =  row['True_Elipse_Y'] 
+                row['True_Elipse_R'] =  row['True_Elipse_R'] 
+                row['True_Box_X1'] =  row['True_Box_X1']
+                row['True_Box_Y1'] =  row['True_Box_Y1']
+                row['True_Box_X2'] = row['True_Box_X2'] 
+                row['True_Box_Y2'] = row['True_Box_Y2'] 
+                row['True_Box_Center_X'] = row['True_Box_Center_X']
+                row['True_Box_Center_Y'] = row['True_Box_Center_Y']
+                
+                
+                row['Predict_Elipse_X'] =  row['Predict_Elipse_X'] 
+                row['Predict_Elipse_Y'] =  row['Predict_Elipse_Y'] 
+                row['Predict_Elipse_R'] =  row['Predict_Elipse_R'] 
+                
+                
+                row['Predict_Box_Center_X'] = row['Predict_Box_Center_X']
+                row['Predict_Box_Center_Y'] = row['Predict_Box_Center_Y']
+            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'], 'True_Elipse_R': row['True_Elipse_R'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_R': row['Predict_Elipse_R'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_X2'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
+            writer.writerow(row)
+
+    shutil.move(tempfile.name, filename)
+
+
+
 
 
 class Detections:
@@ -302,7 +557,10 @@ class Detections:
     def __init__(self):
         self.bbox_data = []
         self.mask_data = []
+    
+    
 
+    
     def add_bbox(self, image_id:int, category_id:int, bbox:list, score:float):
         """ Note that bbox should be a list or tuple of (x1, y1, x2, y2) """
         bbox = [bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]]
@@ -316,7 +574,9 @@ class Detections:
             'bbox': bbox,
             'score': float(score)
         })
-
+        
+        
+     
     def add_mask(self, image_id:int, category_id:int, segmentation:np.ndarray, score:float):
         """ The segmentation should be the full mask, the size of the image and with size [h, w]. """
         rle = pycocotools.mask.encode(np.asfortranarray(segmentation.astype(np.uint8)))
@@ -328,6 +588,10 @@ class Detections:
             'segmentation': rle,
             'score': float(score)
         })
+
+   
+
+
     
     def dump(self):
         dump_arguments = [
@@ -426,6 +690,8 @@ def prep_metrics(ap_data, dets, img, gt, gt_masks, h, w, num_crowd, image_id, de
                 if (boxes[i, 3] - boxes[i, 1]) * (boxes[i, 2] - boxes[i, 0]) > 0:
                     detections.add_bbox(image_id, classes[i], boxes[i,:],   box_scores[i])
                     detections.add_mask(image_id, classes[i], masks[i,:,:], mask_scores[i])
+                    if i ==0 :
+                        export_pupil_evaluate_result (image_id, classes[i], masks[i,:,:], mask_scores[i], boxes[i,:],   box_scores[i], args.save_pupil_evaluate_image)
             return
     
     with timer.env('Eval Setup'):
@@ -587,6 +853,7 @@ def badhash(x):
     Source:
     https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
     """
+    x = int(x)
     x = (((x >> 16) ^ x) * 0x045d9f3b) & 0xFFFFFFFF
     x = (((x >> 16) ^ x) * 0x045d9f3b) & 0xFFFFFFFF
     x =  ((x >> 16) ^ x) & 0xFFFFFFFF
@@ -596,7 +863,8 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
     frame = torch.from_numpy(cv2.imread(path)).cuda().float()
     batch = FastBaseTransform()(frame.unsqueeze(0))
     preds = net(batch)
-
+    
+    
     img_numpy = prep_display(preds, frame, None, None, undo_transform=False)
     
     if save_path is None:
@@ -922,6 +1190,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
         # the hardest. To combat this, I use a hard-coded hash function based on the image ids
         # to shuffle the indices we use. That way, no matter what python version or how pycocotools
         # handles the data, we get the same result every time.
+     
         hashed = [badhash(x) for x in dataset.ids]
         dataset_indices.sort(key=lambda x: hashed[x])
 
@@ -949,7 +1218,9 @@ def evaluate(net:Yolact, dataset, train_mode=False):
                 preds = net(batch)
             # Perform the meat of the operation here depending on our mode.
             if args.display:
-                img_numpy = prep_display(preds, img, h, w)
+                #img_numpy = prep_display(preds, img, h, w)
+                img_numpy = prep_display_eivazi_Izad(preds, img, h, w, image_idx=str(image_idx))
+                
             elif args.benchmark:
                 prep_benchmark(preds, h, w)
             else:
@@ -963,9 +1234,24 @@ def evaluate(net:Yolact, dataset, train_mode=False):
             if args.display:
                 if it > 1:
                     print('Avg FPS: %.4f' % (1 / frame_times.get_avg()))
-                plt.imshow(img_numpy)
-                plt.title(str(dataset.ids[image_idx]))
-                plt.show()
+                #print(box)
+              
+                #upil_segment_img = cv2.cvtColor(gt_masks,cv2.COLOR_GRAY2RGB)
+              
+                
+                
+                #box_color = (0,255,0)
+#                box_text_str = '%s: %.2f' % ("Pupil Box Score", score_box)
+                #text_w, text_h = cv2.getTextSize(box_text_str, font_face, font_scale, font_thickness)[0]
+                #text_pt = (5, 15)
+                #cv2.putText(img, box_text_str, text_pt, font_face, font_scale, box_color, font_thickness, cv2.LINE_AA) 
+                #cv2.rectangle(img, x1,y1, x2,y2, box_color, 1)
+                #cv2.imwrite(str(dataset.ids[image_idx])+"_mask.jpg", pupil_segment_img)
+                #plt.imshow(img_numpy)
+                #cv2.imwrite(str(dataset.ids[image_idx])+".jpg", img)
+                #plt.title(str(dataset.ids[image_idx]))
+                #plt.title(str(dataset.ids[image_idx]))
+                #plt.show()
             elif not args.no_bar:
                 if it > 1: fps = 1 / frame_times.get_avg()
                 else: fps = 0

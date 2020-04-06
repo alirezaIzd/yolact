@@ -352,10 +352,19 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
             
             contours, _ = cv2.findContours(img_masked_numpy.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             areas = [cv2.contourArea(c) for c in contours]
-            sorted_areas = np.sort(areas)
-            cnt=contours[areas.index(sorted_areas[-1])] #the biggest contour
-            r = cv2.boundingRect(cnt)
-            ellipse = cv2.fitEllipse(cnt)
+            
+            if len(areas) > 0:
+             
+                sorted_areas = np.sort(areas)
+                cnt=contours[areas.index(sorted_areas[-1])] #the biggest contour
+                
+                r = cv2.boundingRect(cnt)
+                
+                if len (r) >= 5 :
+                    ellipse = cv2.fitEllipse(cnt)
+                    cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
+                    (xc,yc),(ma,MA),angle = ellipse
+                    update_csv_mask_result(str(image_idx), xc, yc, ma)
 
    
         
@@ -418,9 +427,7 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
     
     if image_idx !="False" :
     
-        cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
-        (xc,yc),(ma,MA),angle = ellipse
-        update_csv_mask_result(str(image_idx), xc, yc, ma)
+       
         cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
        
         update_csv_box_result(image_idx, x1, y1, x2, y2)

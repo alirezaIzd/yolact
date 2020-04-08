@@ -338,35 +338,28 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
     # Beware: very fast but possibly unintelligible mask-drawing code ahead
     # I wish I had access to OpenGL or Vulkan but alas, I guess Pytorch tensor operations will have to suffice
     
-    if args.display_masks and cfg.eval_mask_branch and num_dets_to_consider > 0:
-        # After this, mask is of size [num_dets, h, w, 1]
-        masks = masks[:num_dets_to_consider, :, :, None]
+    
         
-        for i in range(num_dets_to_consider):
+    msk = masks[0, :, :, None]
+    mask = msk.view(1, 192, 192, 1)
+    img_gpu_masked = img_gpu * (mask.sum(dim=0) >= 1).float().expand(-1, -1, 3)
+    img_masked_numpy = (img_gpu_masked * 255).byte().cpu().numpy()               
+    img_masked_numpy = img_masked_numpy[:,:,0].astype('uint8')
+    
+    contours, _ = cv2.findContours(img_masked_numpy.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    areas = [cv2.contourArea(c) for c in contours]
+    
+  
+    sorted_areas = np.sort(areas)
+    cnt=contours[areas.index(sorted_areas[-1])] #the biggest contour
         
-            msk = masks[i, :, :, None]
-            mask = msk.view(1, 192, 192, 1)
-            img_gpu_masked = img_gpu * (mask.sum(dim=0) >= 1).float().expand(-1, -1, 3)
-            img_masked_numpy = (img_gpu_masked * 255).byte().cpu().numpy()               
-            img_masked_numpy = img_masked_numpy[:,:,0].astype('uint8')
-            
-            contours, _ = cv2.findContours(img_masked_numpy.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            areas = [cv2.contourArea(c) for c in contours]
-            
-            if len(areas) > 0:
-             
-                sorted_areas = np.sort(areas)
-                cnt=contours[areas.index(sorted_areas[-1])] #the biggest contour
-                
-                r = cv2.boundingRect(cnt)
-                
-                if len (r) >= 5 :
-                    ellipse = cv2.fitEllipse(cnt)
-                    cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
-                    (xc,yc),(ma,MA),angle = ellipse
-                    update_csv_mask_result(str(image_idx), xc, yc, ma)
+    r = cv2.boundingRect(cnt)
+        
 
-   
+    ellipse = cv2.fitEllipse(cnt)
+            
+
+
         
     if args.display_fps:
             # Draw the box for the fps on the GPU
@@ -427,7 +420,9 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
     
     if image_idx !="False" :
     
-       
+        cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
+        (xc,yc),(ma,MA),angle = ellipse
+        update_csv_mask_result(str(image_idx), xc, yc, ma)
         cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
        
         update_csv_box_result(image_idx, x1, y1, x2, y2)

@@ -138,7 +138,7 @@ def getText(nodelist):
 
 def create_json(idx, new_path, annotaded_dir, kind_of_use, label):
     points = []
-    for i in range(0,350,10):
+    for i in range(0,315,45):
         x = int(label[2])*np.cos(i) + int(label[0])
         y = int(label[2])*np.sin(i) + int(label[1])
         points.append([x,y])

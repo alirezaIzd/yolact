@@ -422,7 +422,8 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
     
         cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
         (xc,yc),(ma,MA),angle = ellipse
-        update_csv_mask_result(str(image_idx), xc, yc, ma)
+        update_csv_mask_result(str(image_idx), xc, yc, ma, MA, angle)
+        
         cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
        
         update_csv_box_result(image_idx, x1, y1, x2, y2)
@@ -469,11 +470,11 @@ def get_transformed_cat(coco_cat_id):
     return coco_cats_inv[coco_cat_id]
     
     
-def update_csv_mask_result(row_id, x, y, r):
+def update_csv_mask_result(row_id, x, y, ma, MA, angle):
     filename = './results/pupil_Detection_result/data_info.csv'
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
-    fields = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_R', 'Predict_Elipse_X', 'Predict_Elipse_Y', 'Predict_Elipse_R',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+    fields =  ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_W', 'True_Elipse_H', 'True_Elipse_Alpha', 'Predict_Elipse_X', 'Predict_Elipse_Y','Predict_Elipse_W', 'Predict_Elipse_H', 'Predict_Elipse_Alpha',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
 
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
@@ -483,11 +484,17 @@ def update_csv_mask_result(row_id, x, y, r):
 
                 row['Predict_Elipse_X'] = x
                 row['Predict_Elipse_Y'] = y
-                row['Predict_Elipse_R'] = r
+                row['Predict_Elipse_W'] =  ma
+                row['Predict_Elipse_H'] =  MA
+                row['Predict_Elipse_Alpha'] =  angle
                 
                 row['True_Elipse_X'] = row['True_Elipse_X'] 
                 row['True_Elipse_Y'] =  row['True_Elipse_Y'] 
-                row['True_Elipse_R'] =  row['True_Elipse_R'] 
+                row['True_Elipse_W'] =  row['True_Elipse_W']
+                row['True_Elipse_H'] =  row['True_Elipse_H'] 
+                row['True_Elipse_Alpha'] =  row['True_Elipse_Alpha'] 
+                
+                
                 row['True_Box_X1'] =  row['True_Box_X1']
                 row['True_Box_Y1'] =  row['True_Box_Y1']
                 row['True_Box_X2'] = row['True_Box_X2'] 
@@ -500,7 +507,7 @@ def update_csv_mask_result(row_id, x, y, r):
                 row['Predict_Box_Y2'] = row['Predict_Box_Y2']
                 row['Predict_Box_Center_X'] = row['Predict_Box_Center_X']
                 row['Predict_Box_Center_Y'] = row['Predict_Box_Center_Y']
-            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'], 'True_Elipse_R': row['True_Elipse_R'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_R': row['Predict_Elipse_R'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_X2'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
+            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'],'True_Elipse_W': row['True_Elipse_W'] ,'True_Elipse_H': row['True_Elipse_H'] ,'True_Elipse_Alpha': row['True_Elipse_Alpha'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_W': row['Predict_Elipse_W'], 'Predict_Elipse_H': row['Predict_Elipse_H'], 'Predict_Elipse_Alpha': row['Predict_Elipse_Alpha'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_X2'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
             writer.writerow(row)
 
     shutil.move(tempfile.name, filename)
@@ -512,7 +519,7 @@ def update_csv_box_result(row_id, x1, y1, x2, y2):
     filename = './results/pupil_Detection_result/data_info.csv'
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
-    fields = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_R', 'Predict_Elipse_X', 'Predict_Elipse_Y', 'Predict_Elipse_R',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+    fields =  ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_W', 'True_Elipse_H', 'True_Elipse_Alpha', 'Predict_Elipse_X', 'Predict_Elipse_Y','Predict_Elipse_W', 'Predict_Elipse_H', 'Predict_Elipse_Alpha',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
 
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
@@ -529,7 +536,10 @@ def update_csv_box_result(row_id, x1, y1, x2, y2):
                 
                 row['True_Elipse_X'] = row['True_Elipse_X'] 
                 row['True_Elipse_Y'] =  row['True_Elipse_Y'] 
-                row['True_Elipse_R'] =  row['True_Elipse_R'] 
+                row['k'] =  row['True_Elipse_W']
+                row['True_Elipse_H'] =  row['True_Elipse_H'] 
+                row['True_Elipse_Alpha'] =  row['True_Elipse_Alpha'] 
+                
                 row['True_Box_X1'] =  row['True_Box_X1']
                 row['True_Box_Y1'] =  row['True_Box_Y1']
                 row['True_Box_X2'] = row['True_Box_X2'] 
@@ -540,12 +550,14 @@ def update_csv_box_result(row_id, x1, y1, x2, y2):
                 
                 row['Predict_Elipse_X'] =  row['Predict_Elipse_X'] 
                 row['Predict_Elipse_Y'] =  row['Predict_Elipse_Y'] 
-                row['Predict_Elipse_R'] =  row['Predict_Elipse_R'] 
+                row['Predict_Elipse_W'] =  row['Predict_Elipse_W']
+                row['Predict_Elipse_H'] =  row['Predict_Elipse_H'] 
+                row['Predict_Elipse_Alpha'] =  row['Predict_Elipse_Alpha'] 
                 
                 
                 row['Predict_Box_Center_X'] = row['Predict_Box_Center_X']
                 row['Predict_Box_Center_Y'] = row['Predict_Box_Center_Y']
-            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'], 'True_Elipse_R': row['True_Elipse_R'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_R': row['Predict_Elipse_R'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_X2'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
+            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'],'True_Elipse_W': row['True_Elipse_W'] ,'True_Elipse_H': row['True_Elipse_H'] ,'True_Elipse_Alpha': row['True_Elipse_Alpha'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_W': row['Predict_Elipse_W'], 'Predict_Elipse_H': row['Predict_Elipse_H'], 'Predict_Elipse_Alpha': row['Predict_Elipse_Alpha'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_X2'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
             writer.writerow(row)
 
     shutil.move(tempfile.name, filename)

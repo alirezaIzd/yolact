@@ -6,7 +6,6 @@ import numpy as np
 from config import config
 
 
-
 def rf(low, high):
     """
     return a random float number between [low, high)
@@ -29,7 +28,6 @@ def ri(low, high):
     if low >= high:
         return low
     return np.random.randint(low, high)
-
 
 
 
@@ -57,9 +55,6 @@ def assert_it(img, lbl):
     assert (0 <= lbl[1] <= h), "y value should be in range of 0 and height of image"
 
     return
-
-
-
 
 
 class Augmentor(object):
@@ -135,13 +130,19 @@ class Augmentor(object):
         # update the label based movement and scale
         lx = label[0] * s + rx
         ly = label[1] * s + ry
-        lw = label[2] * s
+        lw = label[2] * s 
+        lh = label[3] * s 
+        la = label[4]
 
         # clip the values inside the image bound (height, widht)
         lx = np.clip(lx, 0, w)
         ly = np.clip(ly, 0, h)
+        
 
-        return bg, [lx, ly, lw]
+
+
+
+        return bg, [lx, ly, lw, lh, la]
 
     def addReflection(self, in_img):
         """
@@ -244,6 +245,7 @@ class Augmentor(object):
         x = _lbl[0]
         y = _lbl[1]
         w = _lbl[2]
+        
 
         attemps = 0
 
@@ -362,8 +364,12 @@ class Augmentor(object):
             lx = lx * s
             ly = ly * s
             lw = lw * s
+            lh = lbl[3]  * s
+            la = lbl[4]
 
-            return image, [lx, ly, lw]
+            
+
+            return image, [lx, ly, lw, lh, la]
 
         # if we are here, no crop applied
         return img, lbl
@@ -386,8 +392,10 @@ class Augmentor(object):
         lx = w - lbl[0]
         ly = lbl[1]
         lw = lbl[2]
+        lh = lbl[3] 
+        la = lbl[4]
 
-        return img, [lx, ly, lw]
+        return img, [lx, ly, lw, lh, la]
 
     def resize_it(self, img, lbl):
         """
@@ -431,8 +439,8 @@ class Augmentor(object):
 
         c_img = self.addExposure(c_img)
 
-        c_img, c_label = self.flip_it(c_img, c_label)
-        assert_it(c_img, c_label)
+        #c_img, c_label = self.flip_it(c_img, c_label)
+        #assert_it(c_img, c_label)
         #
         c_img, c_label = self.downscale(c_img, c_label)
         assert_it(c_img, c_label)

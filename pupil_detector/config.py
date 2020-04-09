@@ -39,7 +39,7 @@ config["input_height"] = 192
 config["input_channel"] = 1
 
 # Output shape
-config["output_dim"] = 3
+config["output_dim"] = 5
 config["output_weights"] = [1.0, 1.0, 1.0, 1.0, 0.5]
 
 # Augmentation parameters

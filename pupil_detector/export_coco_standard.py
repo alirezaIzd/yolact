@@ -17,6 +17,7 @@ from augmentor import Augmentor
 from config import config
 import csv
 import shutil
+import numpy as np
 
 
 
@@ -137,12 +138,51 @@ def getText(nodelist):
 
 
 def create_json(idx, new_path, annotaded_dir, kind_of_use, label):
-    points = []
-    for i in range(0,315,45):
-        x = int(label[2])*np.cos(i) + int(label[0])
-        y = int(label[2])*np.sin(i) + int(label[1])
-        points.append([x,y])
+
+    
+
         
+    xcenter, ycenter = label[0], label[1]
+    width, height = label[2], label[3]
+    angle = label[4]
+
+    theta = np.deg2rad(np.arange(0.0, 360.0, 1))
+
+    x = 0.5 * width * np.cos(theta)
+    y = 0.5 * height * np.sin(theta)
+
+    rtheta = np.radians(angle)
+
+    R = np.array([
+    [np.cos(rtheta), -np.sin(rtheta)],
+    [np.sin(rtheta),  np.cos(rtheta)],
+    ])
+
+    x, y = np.dot(R, np.array([x, y]))
+    x += xcenter
+    y += ycenter
+    
+    points = []
+    for i in range(0, len(x)):
+    
+        if x[i]<0 :
+        
+            x[i] = 0
+            
+        if x[i]> 192 :
+        
+            x[i] = 192
+            
+        if y[i]<0 :
+        
+            y[i] = 0
+            
+        if y[i]> 192 :
+        
+            y[i] = 192    
+            
+        points.append([x[i],y[i]])
+    
     img = load_image_file(new_path)
     data = {
             "version":"3.21.1",
@@ -194,7 +234,7 @@ def data_set_changer (all_image_valid_list, valid_list_xml, valid_list, annotade
         ag_list = random.sample(range(0,len(valid_list)),len(valid_list) * int(ag_percentage)//100)
         
     count =  0 
-    csv_columns = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_R', 'Predict_Elipse_X', 'Predict_Elipse_Y', 'Predict_Elipse_R',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+    csv_columns = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_W', 'True_Elipse_H', 'True_Elipse_Alpha', 'Predict_Elipse_X', 'Predict_Elipse_Y','Predict_Elipse_W', 'Predict_Elipse_H', 'Predict_Elipse_Alpha',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
     pupil_center =[]
     
     for idx, current_index in enumerate(valid_list): 
@@ -210,7 +250,9 @@ def data_set_changer (all_image_valid_list, valid_list_xml, valid_list, annotade
         in_label = []
         in_label.append(getText(xmldoc.getElementsByTagName("x")[0].childNodes))
         in_label.append(getText(xmldoc.getElementsByTagName("y")[0].childNodes))
+        in_label.append(getText(xmldoc.getElementsByTagName("w")[0].childNodes))
         in_label.append(getText(xmldoc.getElementsByTagName("h")[0].childNodes))
+        in_label.append(getText(xmldoc.getElementsByTagName("a")[0].childNodes))
         label = np.asarray(in_label, dtype=np.float32)
         
         
@@ -222,19 +264,20 @@ def data_set_changer (all_image_valid_list, valid_list_xml, valid_list, annotade
             print("label for {0} is out of bound".format(img))
             continue
             
-        pupil_center.append({'ID':count, 'True_Elipse_X':label[0], 'True_Elipse_Y':label[1], 'True_Elipse_R':label[2], 'Predict_Elipse_X':"", 'Predict_Elipse_R':"", 'True_Box_X1':"", 'True_Box_Y1':"", 'True_Box_X2':"", 'True_Box_Y2':"", 'True_Box_Center_X':"", 'True_Box_Center_Y':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"", 'Predict_Box_Center_X':"", 'Predict_Box_Center_Y':""})
+        pupil_center.append({'ID':count, 'True_Elipse_X':label[0], 'True_Elipse_Y':label[1], 'True_Elipse_W':label[2], 'True_Elipse_H':label[3], 'True_Elipse_Alpha':label[4], 'Predict_Elipse_X':"",'Predict_Elipse_Y':"", 'Predict_Elipse_W':"", 'Predict_Elipse_H':"", 'Predict_Elipse_Alpha':"", 'True_Box_X1':"", 'True_Box_Y1':"", 'True_Box_X2':"", 'True_Box_Y2':"", 'True_Box_Center_X':"", 'True_Box_Center_Y':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"", 'Predict_Box_Center_X':"", 'Predict_Box_Center_Y':""})
         create_json(count, new_path, annotaded_dir, kind_of_use, label)
         count = count + 1
         
         if len(ag_list) > 0 and idx in ag_list:
          
             new_path = annotaded_dir + "/" + kind_of_use + "/" + str(count) + ".jpg"
-            image, label = noise_creator(img, label, ag)
-            label = np.asarray(label, dtype=np.float32)
-            pupil_center.append({'ID':count, 'True_Elipse_X':label[0], 'True_Elipse_Y':label[1], 'True_Elipse_R':label[2], 'Predict_Elipse_X':"", 'Predict_Elipse_R':"", 'True_Box_X1':"", 'True_Box_Y1':"", 'True_Box_X2':"", 'True_Box_Y2':"", 'True_Box_Center_X':"", 'True_Box_Center_Y':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"", 'Predict_Box_Center_X':"", 'Predict_Box_Center_Y':""})
+            image, noise_label = noise_creator(img, label, ag)
+            image, noise_label = noise_creator(img, label, ag)
+            noise_label = np.asarray(noise_label, dtype=np.float32)
+            pupil_center.append({'ID':count, 'True_Elipse_X':noise_label[0], 'True_Elipse_Y':noise_label[1], 'True_Elipse_W':noise_label[2], 'True_Elipse_H':noise_label[3], 'True_Elipse_Alpha':noise_label[4],'Predict_Elipse_X':"", 'Predict_Elipse_Y':"",  'Predict_Elipse_W':"", 'Predict_Elipse_H':"", 'Predict_Elipse_Alpha':"",'True_Box_X1':"", 'True_Box_Y1':"", 'True_Box_X2':"", 'True_Box_Y2':"", 'True_Box_Center_X':"", 'True_Box_Center_Y':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"", 'Predict_Box_Center_X':"", 'Predict_Box_Center_Y':""})
             img_3D = convert_2D_to_3D(image)
             img_3D.save(new_path)
-            create_json(str(count), new_path, annotaded_dir, kind_of_use, label)
+            create_json(str(count), new_path, annotaded_dir, kind_of_use, noise_label)
             count = count + 1
     
     

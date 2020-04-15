@@ -10,11 +10,11 @@ In order to use YOLACT++, make sure you compile the DCNv2 code. (See [Installati
 
 Some examples from our YOLACT base model:
 
-![Example 0](data/example_0.png)
+![Example 0](data/example_0.jpg)
 
-![Example 1](data/example_1.png)
+![Example 1](data/example_1.jpg)
 
-![Example 2](data/example_2.png)
+![Example 2](data/example_2.jpg)
 
 # Installation
  - Clone this repository and enter it:

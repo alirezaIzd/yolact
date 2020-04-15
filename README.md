@@ -25,6 +25,8 @@ Some examples from our YOLACT base model:
  - Set up the environment using one of the following methods:
    - Using [Anaconda](https://www.anaconda.com/distribution/)
      - Run `conda env create -f environment.yml`
+     - Run `conda activate yolact-env`
+     
    - Manually with pip
      - Set up a Python3 environment (e.g., using virtenv).
      - Install [Pytorch](http://pytorch.org/) 1.0.1 (or higher) and TorchVision.
@@ -41,9 +43,40 @@ Some examples from our YOLACT base model:
    python setup.py build develop
    ```
 
+## Custom Datasets
+You can train you own dataset by following these steps:
+ - Create a xml annotation file for your dataset. One file per image. The example for this can be found at 
+ ```
+ ./data/pupil_original-data
+ ```
+ - Copy your data to the folder above
+ 
+ - To use our data augmentation method add noisy videos at. Or use our defulat videos:
+  ```
+ ./data/pupil_noisy_videos
+ ```
+ - Convert your xml anotation files to the json with coco Stndard. The new files will be located at "Train/test" folder:
+    ```Shell
+    python ./pupil_detector/export_coco_standard.py --images_dir=./data/pupil_original-data/ --annotaded_dir=./data/pupil_annotaded_data --ag_flag=True  --ag_percentage=100  --eval_dataset_flag=False
+   ```
+ -Convert your annoation with agumentation to one json file based on Coco standard:
+   ```Shell
+   python ./pupil_detector/Coco_Dataset_Creator.py  --input_dir=./data/pupil_annotaded_data/train --output_dir=./data/pupil_annotaded_data/yolact_datasets_train --labels=./pupil_detector/labels.txt
+   
+   python ./pupil_detector/Coco_Dataset_Creator.py  --input_dir=./data/pupil_annotaded_data/test --output_dir=./data/pupil_annotaded_data/yolact_datasets_test --labels=./pupil_detector/labels.txt
+   ``` 
+# Training
+We trained out model based on the dataset presneted in paperXXX.
+ - To train, grab an pretrained model and put it in `./weights`.
+   - For our weight, download `XXXX.pth` from [here](https://XXXX).
 
-# Evaluation
-Here are our YOLACT models (released on April 5th, 2019) along with their FPS on a Titan Xp and mAP on `test-dev`:
+ - Run training command below.
+   ```Shell
+   python train.py --config=yolact_base_config --resume=./weights/yolact_plus_resnet50_54_800000.pth --start_iter=0 --batch_size=8
+   ```
+   
+# Weights
+Here are orinial YOLACT models (released on April 5th, 2019) along with their FPS on a Titan Xp and mAP on `test-dev`:
 
 | Image Size | Backbone      | FPS  | mAP  | Weights                                                                                                              |  |
 |:----------:|:-------------:|:----:|:----:|----------------------------------------------------------------------------------------------------------------------|--------|
@@ -52,59 +85,37 @@ Here are our YOLACT models (released on April 5th, 2019) along with their FPS on
 | 550        | Resnet101-FPN | 33.5 | 29.8 | [yolact_base_54_800000.pth](https://drive.google.com/file/d/1UYy3dMapbH1BnmtZU4WH1zbYgOzzHHf_/view?usp=sharing)      | [Mirror](https://ucdavis365-my.sharepoint.com/:u:/g/personal/yongjaelee_ucdavis_edu/EYRWxBEoKU9DiblrWx2M89MBGFkVVB_drlRd_v5sdT3Hgg)
 | 700        | Resnet101-FPN | 23.6 | 31.2 | [yolact_im700_54_800000.pth](https://drive.google.com/file/d/1lE4Lz5p25teiXV-6HdTiOJSnS7u7GBzg/view?usp=sharing)     | [Mirror](https://ucdavis365-my.sharepoint.com/:u:/g/personal/yongjaelee_ucdavis_edu/Eagg5RSc5hFEhp7sPtvLNyoBjhlf2feog7t8OQzHKKphjw)
 
-YOLACT++ models (released on December 16th, 2019):
+YOLACT++ models (released on December 16th, 2019):python train.py --config=yolact_base_config --resume=./weights/yolact_plus_resnet50_54_800000.pth --start_iter=0 --batch_size=8
 
 | Image Size | Backbone      | FPS  | mAP  | Weights                                                                                                              |  |
 |:----------:|:-------------:|:----:|:----:|----------------------------------------------------------------------------------------------------------------------|--------|
 | 550        | Resnet50-FPN  | 33.5 | 34.1 | [yolact_plus_resnet50_54_800000.pth](https://drive.google.com/file/d/1ZPu1YR2UzGHQD0o1rEqy-j5bmEm3lbyP/view?usp=sharing)  | [Mirror](https://ucdavis365-my.sharepoint.com/:u:/g/personal/yongjaelee_ucdavis_edu/EcJAtMiEFlhAnVsDf00yWRIBUC4m8iE9NEEiV05XwtEoGw) |
 | 550        | Resnet101-FPN | 27.3 | 34.6 | [yolact_plus_base_54_800000.pth](https://drive.google.com/file/d/15id0Qq5eqRbkD-N3ZjDZXdCvRyIaHpFB/view?usp=sharing) | [Mirror](https://ucdavis365-my.sharepoint.com/:u:/g/personal/yongjaelee_ucdavis_edu/EVQ62sF0SrJPrl_68onyHF8BpG7c05A8PavV4a849sZgEA)
 
-To evalute the model, put the corresponding weights file in the `./weights` directory and run one of the following commands. The name of each config is everything before the numbers in the file name (e.g., `yolact_base` for `yolact_base_54_800000.pth`).
-## Quantitative Results on COCO
-```Shell
-# Quantitatively evaluate a trained model on the entire validation set. Make sure you have COCO downloaded as above.
-# This should get 29.92 validation mask mAP last time I checked.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth
+YOLACT++ pupil models :
+| Image Size | Backbone      | FPS  | mAP  | Weights                                                                                                              |  |
+|:----------:|:-------------:|:----:|:----:|----------------------------------------------------------------------------------------------------------------------|--------|
+| 550        | RXXXX  | 33.5 | 34.1 | [XXX.pth](https://XXXX)  | [Mirror](https://XXXX)
 
-# Output a COCOEval json to submit to the website or to use the run_coco_eval.py script.
-# This command will create './results/bbox_detections.json' and './results/mask_detections.json' for detection and instance segmentation respectively.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --output_coco_json
-
-# You can run COCOEval on the files created in the previous command. The performance should match my implementation in eval.py.
-python run_coco_eval.py
-
-# To output a coco json file for test-dev, make sure you have test-dev downloaded from above and go
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --output_coco_json --dataset=coco2017_testdev_dataset
-```
-## Qualitative Results on COCO
-```Shell
-# Display qualitative results on COCO. From here on I'll use a confidence threshold of 0.15.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --display
-```
-
-# Training
-By default, we train on COCO. Make sure to download the entire dataset using the commands above.
- - To train, grab an imagenet-pretrained model and put it in `./weights`.
-   - For Resnet101, download `resnet101_reducedfc.pth` from [here](https://drive.google.com/file/d/1tvqFPd4bJtakOlmn-uIA492g2qurRChj/view?usp=sharing).
-   - For Resnet50, download `resnet50-19c8e357.pth` from [here](https://drive.google.com/file/d/1Jy3yCdbatgXa5YYIdTCRrSV0S9V5g1rn/view?usp=sharing).
-   - For Darknet53, download `darknet53.pth` from [here](https://drive.google.com/file/d/17Y431j4sagFpSReuPNoFcj9h7azDTZFf/view?usp=sharing).
- - Run one of the training commands below.
-   - Note that you can press ctrl+c while training and it will save an `*_interrupt.pth` file at the current iteration.
-   - All weights are saved in the `./weights` directory by default with the file name `<config>_<epoch>_<iter>.pth`.
-```Shell
-# Trains using the base config with a batch size of 8 (the default).
-python train.py --config=yolact_base_config
-
-# Trains yolact_base_config with a batch_size of 5. For the 550px models, 1 batch takes up around 1.5 gigs of VRAM, so specify accordingly.
-python train.py --config=yolact_base_config --batch_size=5
-
-# Resume training yolact_base with a specific weight file and start from the iteration specified in the weight file's name.
-python train.py --config=yolact_base_config --resume=weights/yolact_base_10_32100.pth --start_iter=-1
-
-# Use the help option to see a description of all available command line arguments
-python train.py --help
-```
-
+## Results and evaluation
+- Create a xml annotation file for your dataset. One file per image. The example for this can be found at 
+ ```
+ ./data/pupil_original-data
+ ```
+- Copy your data to the folder above
+- Convert your xml anotation files to the json with coco Stndard. The new files will be located at "test" folder:
+    ```Shell
+    python ./pupil_detector/export_coco_standard.py --images_dir=./data/pupil_original-data/ --annotaded_dir=./data/pupil_annotaded_data --ag_flag=False  --eval_dataset_flag=True
+   ``` 
+- Convert your annoation with agumentation to one json file based on Coco standard:
+   ```Shell
+   python ./pupil_detector/Coco_Dataset_Creator.py  --input_dir=./data/pupil_annotaded_data/test --output_dir=./data/pupil_annotaded_data/yolact_datasets_test --labels=./pupil_detector/labels.txt
+  ```
+- Run evaluation command below:
+   ```Shell
+   python eval.py --trained_model=./weights/yolact_base_205_8000.pth --score_threshold=0.15 --top_k=15 --display --save_pupil_evaluate_image=True
+  ```
+  
 ## Multi-GPU Support
 YOLACT now supports multiple GPUs seamlessly during training:
 
@@ -118,50 +129,6 @@ YOLACT now supports multiple GPUs seamlessly during training:
 
 ## Logging
 YOLACT now logs training and validation information by default. You can disable this with `--no_log`. A guide on how to visualize these logs is coming soon, but now you can look at `LogVizualizer` in `utils/logger.py` for help.
-
-## Pascal SBD
-We also include a config for training on Pascal SBD annotations (for rapid experimentation or comparing with other methods). To train on Pascal SBD, proceed with the following steps:
- 1. Download the dataset from [here](http://home.bharathh.info/pubs/codes/SBD/download.html). It's the first link in the top "Overview" section (and the file is called `benchmark.tgz`).
- 2. Extract the dataset somewhere. In the dataset there should be a folder called `dataset/img`. Create the directory `./data/sbd` (where `.` is YOLACT's root) and copy `dataset/img` to `./data/sbd/img`.
- 4. Download the COCO-style annotations from [here](https://drive.google.com/open?id=1ExrRSPVctHW8Nxrn0SofU1lVhK5Wn0_S).
- 5. Extract the annotations into `./data/sbd/`.
- 6. Now you can train using `--config=yolact_resnet50_pascal_config`. Check that config to see how to extend it to other models.
-
-I will automate this all with a script soon, don't worry. Also, if you want the script I used to convert the annotations, I put it in `./scripts/convert_sbd.py`, but you'll have to check how it works to be able to use it because I don't actually remember at this point.
-
-If you want to verify our results, you can download our `yolact_resnet50_pascal_config` weights from [here](https://drive.google.com/open?id=1yLVwtkRtNxyl0kxeMCtPXJsXFFyc_FHe). This model should get 72.3 mask AP_50 and 56.2 mask AP_70. Note that the "all" AP isn't the same as the "vol" AP reported in others papers for pascal (they use an averages of the thresholds from `0.1 - 0.9` in increments of `0.1` instead of what COCO uses).
-
-## Custom Datasets
-You can also train on your own dataset by following these steps:
- - Create a COCO-style Object Detection JSON annotation file for your dataset. The specification for this can be found [here](http://cocodataset.org/#format-data). Note that we don't use some fields, so the following may be omitted:
-   - `info`
-   - `liscense`
-   - Under `image`: `license, flickr_url, coco_url, date_captured`
-   - `categories` (we use our own format for categories, see below)
- - Create a definition for your dataset under `dataset_base` in `data/config.py` (see the comments in `dataset_base` for an explanation of each field):
-```Python
-my_custom_dataset = dataset_base.copy({
-    'name': 'My Dataset',
-
-    'train_images': 'path_to_training_images',
-    'train_info':   'path_to_training_annotation',
-
-    'valid_images': 'path_to_validation_images',
-    'valid_info':   'path_to_validation_annotation',
-
-    'has_gt': True,
-    'class_names': ('my_class_id_1', 'my_class_id_2', 'my_class_id_3', ...)
-})
-```
- - A couple things to note:
-   - Class IDs in the annotation file should start at 1 and increase sequentially on the order of `class_names`. If this isn't the case for your annotation file (like in COCO), see the field `label_map` in `dataset_base`.
-   - If you do not want to create a validation split, use the same image path and annotations file for validation. By default (see `python train.py --help`), `train.py` will output validation mAP for the first 5000 images in the dataset every 2 epochs.
- - Finally, in `yolact_base_config` in the same file, change the value for `'dataset'` to `'my_custom_dataset'` or whatever you named the config object above. Then you can use any of the training commands in the previous section.
-
-#### Creating a Custom Dataset from Scratch
-See [this nice post by @Amit12690](https://github.com/dbolya/yolact/issues/70#issuecomment-504283008) for tips on how to annotate a custom dataset and prepare it for use with YOLACT.
-
-
 
 
 # Citation
@@ -186,8 +153,17 @@ For YOLACT++, please cite
   primaryClass  = {cs.CV}
 }
 ```
-
+For pupil detection model, please cite
+```
+@inproceedings{eivazi2019improving,
+  title={Improving real-time CNN-based pupil detection through domain-specific data augmentation},
+  author={Eivazi, Shaharam and Santini, Thiago and Keshavarzi, Alireza and K{\"u}bler, Thomas and Mazzei, Andrea},
+  booktitle={Proceedings of the 11th ACM Symposium on Eye Tracking Research \& Applications},
+  pages={1--6},
+  year={2019}
+}
+```
 
 
 # Contact
-For questions about our paper or code, please contact [Daniel Bolya](mailto:dbolya@ucdavis.edu).
+For questions about our paper or code, please contact https://www.hci.uni-tuebingen.de/chair/team/shahram-eivazi.

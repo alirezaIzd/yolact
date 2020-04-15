@@ -1,14 +1,5 @@
-# **Y**ou **O**nly **L**ook **A**t **C**oefficien**T**s
-```
-    ██╗   ██╗ ██████╗ ██╗      █████╗  ██████╗████████╗
-    ╚██╗ ██╔╝██╔═══██╗██║     ██╔══██╗██╔════╝╚══██╔══╝
-     ╚████╔╝ ██║   ██║██║     ███████║██║        ██║   
-      ╚██╔╝  ██║   ██║██║     ██╔══██║██║        ██║   
-       ██║   ╚██████╔╝███████╗██║  ██║╚██████╗   ██║   
-       ╚═╝    ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝   ╚═╝ 
-```
-
-A simple, fully convolutional model for real-time instance segmentation. This is the code for our papers:
+A simple, fully convolutional model for real-time pupil segmentation. 
+This code is based on original yolact:
  - [YOLACT: Real-time Instance Segmentation](https://arxiv.org/abs/1904.02689)
  - [YOLACT++: Better Real-time Instance Segmentation](https://arxiv.org/abs/1912.06218)
 
@@ -17,16 +8,13 @@ YOLACT++'s resnet50 model runs at 33.5 fps on a Titan Xp and achieves 34.1 mAP o
 
 In order to use YOLACT++, make sure you compile the DCNv2 code. (See [Installation](https://github.com/dbolya/yolact#installation))
 
-#### For a real-time demo, check out our ICCV video:
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/0pMfmo8qfpQ/0.jpg)](https://www.youtube.com/watch?v=0pMfmo8qfpQ)
+Some examples from our YOLACT base model:
 
-Some examples from our YOLACT base model (33.5 fps on a Titan Xp and 29.8 mAP on COCO's `test-dev`):
+![Example 0](data/example_0.png)
 
-![Example 0](data/yolact_example_0.png)
+![Example 1](data/example_1.png)
 
-![Example 1](data/yolact_example_1.png)
-
-![Example 2](data/yolact_example_2.png)
+![Example 2](data/example_2.png)
 
 # Installation
  - Clone this repository and enter it:
@@ -46,15 +34,7 @@ Some examples from our YOLACT base model (33.5 fps on a Titan Xp and 29.8 mAP on
        pip install cython
        pip install opencv-python pillow pycocotools matplotlib 
        ```
- - If you'd like to train YOLACT, download the COCO dataset and the 2014/2017 annotations. Note that this script will take a while and dump 21gb of files into `./data/coco`.
-   ```Shell
-   sh data/scripts/COCO.sh
-   ```
- - If you'd like to evaluate YOLACT on `test-dev`, download `test-dev` with this script.
-   ```Shell
-   sh data/scripts/COCO_test.sh
-   ```
- - If you want to use YOLACT++, compile deformable convolutional layers (from [DCNv2](https://github.com/CharlesShang/DCNv2/tree/pytorch_1.0)).
+  - If you want to use YOLACT++, compile deformable convolutional layers (from [DCNv2](https://github.com/CharlesShang/DCNv2/tree/pytorch_1.0)).
    Make sure you have the latest CUDA toolkit installed from [NVidia's Website](https://developer.nvidia.com/cuda-toolkit).
    ```Shell
    cd external/DCNv2
@@ -101,39 +81,6 @@ python eval.py --trained_model=weights/yolact_base_54_800000.pth --output_coco_j
 # Display qualitative results on COCO. From here on I'll use a confidence threshold of 0.15.
 python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --display
 ```
-## Benchmarking on COCO
-```Shell
-# Run just the raw model on the first 1k images of the validation set
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --benchmark --max_images=1000
-```
-## Images
-```Shell
-# Display qualitative results on the specified image.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --image=my_image.png
-
-# Process an image and save it to another file.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --image=input_image.png:output_image.png
-
-# Process a whole folder of images.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --images=path/to/input/folder:path/to/output/folder
-```
-## Video
-```Shell
-# Display a video in real-time. "--video_multiframe" will process that many frames at once for improved performance.
-# If you want, use "--display_fps" to draw the FPS directly on the frame.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --video_multiframe=4 --video=my_video.mp4
-
-# Display a webcam feed in real-time. If you have multiple webcams pass the index of the webcam you want instead of 0.
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --video_multiframe=4 --video=0
-
-# Process a video and save it to another file. This uses the same pipeline as the ones above now, so it's fast!
-python eval.py --trained_model=weights/yolact_base_54_800000.pth --score_threshold=0.15 --top_k=15 --video_multiframe=4 --video=input_video.mp4:output_video.mp4
-```
-As you can tell, `eval.py` can do a ton of stuff. Run the `--help` command to see everything it can do.
-```Shell
-python eval.py --help
-```
-
 
 # Training
 By default, we train on COCO. Make sure to download the entire dataset using the commands above.

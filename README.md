@@ -30,7 +30,8 @@ Some examples from our YOLACT base model:
        ```Shell
        # Cython needs to be installed before pycocotools
        pip install cython
-       pip install opencv-python pillow pycocotools matplotlib 
+       pip install opencv-python pillow pycocotools matplotlib
+       pip install circle-fit
        ```
   - If you want to use YOLACT++, compile deformable convolutional layers (from [DCNv2](https://github.com/CharlesShang/DCNv2/tree/pytorch_1.0)).
    Make sure you have the latest CUDA toolkit installed from [NVidia's Website](https://developer.nvidia.com/cuda-toolkit).

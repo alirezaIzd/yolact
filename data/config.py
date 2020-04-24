@@ -141,10 +141,10 @@ my_dataset_base = Config({
 
 eye_dataset = my_dataset_base.copy({
     'name': 'eye_dataset',
-    'train_images': './data/pupil_annotaded_data/yolact_datasets_train',
+    'train_images': './data/pupil_annotaded_data/train',
     'train_info':   './data/pupil_annotaded_data/yolact_datasets_train/annotations.json',
 
-    'valid_images': './data/pupil_annotaded_data/yolact_datasets_test',
+    'valid_images': './data/pupil_annotaded_data/test',
     'valid_info':   './data/pupil_annotaded_data/yolact_datasets_test/annotations.json',
 
     'has_gt': True,

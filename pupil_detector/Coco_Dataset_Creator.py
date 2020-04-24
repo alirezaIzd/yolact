@@ -30,15 +30,14 @@ def update_csv_result(image_index, bbox):
     
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
-    fields = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_R', 'Predict_Elipse_X', 'Predict_Elipse_Y', 'Predict_Elipse_R',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+    fields = ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Mean_Squared_Error']
     
    
     x1 = bbox[0]
     y1 = bbox[1]
     x2 = bbox[2]
     y2 = bbox[3]
-    center_x = (x1 + x2) / 2
-    center_y = (y1 + y2) / 2
+
 
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
@@ -47,28 +46,32 @@ def update_csv_result(image_index, bbox):
         
             if row['ID'] == str(image_index):
    
-                row['True_Box_X1'] = x1
-                row['True_Box_Y1'] = y1
-                row['True_Box_X2'] = x2
-                row['True_Box_Y2'] = y2
-                row['True_Box_Center_X'] = center_x
-                row['True_Box_Center_Y'] = center_y
+                row['Original_Box_X1'] = x1
+                row['Original_Box_Y1'] = y1
+                row['Original_Box_X2'] = x2
+                row['Original_Box_Y2'] = y2
+
                 
                 
-                row['Predict_Elipse_X'] =  row['Predict_Elipse_X'] 
-                row['Predict_Elipse_Y'] = row['Predict_Elipse_Y']
-                row['Predict_Elipse_R'] = row['Predict_Elipse_R']
-                row['True_Elipse_X'] = row['True_Elipse_X'] 
-                row['True_Elipse_Y'] =  row['True_Elipse_Y'] 
-                row['True_Elipse_R'] =  row['True_Elipse_R'] 
+                row['Predict_Ellipse_Center_X'] =  row['Predict_Ellipse_Center_X'] 
+                row['Predict_Ellipse_Center_Y'] = row['Predict_Ellipse_Center_Y']
+                row['Predict_Ellipse_W'] = row['Predict_Ellipse_W']
+                row['Predict_Ellipse_H'] = row['Predict_Ellipse_H']
+                row['Predict_Ellipse_Alpha'] = row['Predict_Ellipse_Alpha']
+                
+                row['Original_Ellipse_Center_X'] = row['Original_Ellipse_Center_X'] 
+                row['Original_Ellipse_Center_Y'] =  row['Original_Ellipse_Center_Y'] 
+                row['Original_Ellipse_W'] =  row['Original_Ellipse_W'] 
+                row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
+                row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
                 row['Predict_Box_X1'] = row['Predict_Box_X1'] 
                 row['Predict_Box_Y1'] = row['Predict_Box_Y1'] 
                 row['Predict_Box_X2'] = row['Predict_Box_X2']
                 row['Predict_Box_Y2'] = row['Predict_Box_Y2']
-                row['Predict_Box_Center_X'] = row['Predict_Box_Center_X']
-                row['Predict_Box_Center_Y'] = row['Predict_Box_Center_Y']
+                row['Ellipse_Center_Mean_Squared_Error'] = row['Ellipse_Center_Mean_Squared_Error']
+           
 
-            row = {'ID': row['ID'], 'True_Elipse_X':row['True_Elipse_X'],'True_Elipse_Y':row['True_Elipse_Y'], 'True_Elipse_R': row['True_Elipse_R'] , 'Predict_Elipse_X': row['Predict_Elipse_X'],  'Predict_Elipse_Y': row['Predict_Elipse_Y'], 'Predict_Elipse_R': row['Predict_Elipse_R'], 'True_Box_X1':  row['True_Box_X1'], 'True_Box_Y1': row['True_Box_Y1'], 'True_Box_X2' : row['True_Box_X2'], 'True_Box_Y2' : row['True_Box_Y2'], 'True_Box_Center_X': row['True_Box_Center_X'], 'True_Box_Center_Y': row['True_Box_Center_Y'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'], 'Predict_Box_Center_X': row['Predict_Box_Center_X'], 'Predict_Box_Center_Y': row['Predict_Box_Center_Y']}
+            row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Mean_Squared_Error':  row['Ellipse_Center_Mean_Squared_Error'] }
             writer.writerow(row)
 
     shutil.move(tempfile.name, filename)
@@ -88,8 +91,8 @@ def main():
     shutil.rmtree(args.output_dir, ignore_errors=True)
 
     os.makedirs(args.output_dir)
-    os.makedirs(osp.join(args.output_dir, 'JPEGImages'))
-    print('Creating dataset:', args.output_dir)
+    #os.makedirs(osp.join(args.output_dir, 'JPEGImages'))
+    print('Creating Json dataset:', args.output_dir)
 
     now = datetime.datetime.now()
 
@@ -143,19 +146,15 @@ def main():
             label_data = json.load(f)
 
         base = osp.splitext(osp.basename(label_file))[0]
-        out_img_file = osp.join(
-            args.output_dir, 'JPEGImages', base + '.jpg'
-        )
+        out_img_file = base + '.jpg'
+   
 
-        img_file = osp.join(
-            osp.dirname(label_file), label_data['imagePath']
-        )
+        img_file = args.input_dir+"/"+out_img_file
         img = np.asarray(PIL.Image.open(img_file).convert('RGB'))
-        PIL.Image.fromarray(img).save(out_img_file)
         data['images'].append(dict(
             license=0,
             url=None,
-            file_name=osp.relpath(out_img_file, osp.dirname(out_ann_file)),
+            file_name= out_img_file,
             height=img.shape[0],
             width=img.shape[1],
             date_captured=None,

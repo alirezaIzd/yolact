@@ -234,7 +234,7 @@ def data_set_changer (all_image_valid_list, valid_list_xml, valid_list, annotade
         ag_list = random.sample(range(0,len(valid_list)),len(valid_list) * int(ag_percentage)//100)
         
     count =  0 
-    csv_columns = ['ID', 'True_Elipse_X', 'True_Elipse_Y', 'True_Elipse_W', 'True_Elipse_H', 'True_Elipse_Alpha', 'Predict_Elipse_X', 'Predict_Elipse_Y','Predict_Elipse_W', 'Predict_Elipse_H', 'Predict_Elipse_Alpha',  'True_Box_X1', 'True_Box_Y1', 'True_Box_X2', 'True_Box_Y2', 'True_Box_Center_X', 'True_Box_Center_Y','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2', 'Predict_Box_Center_X', 'Predict_Box_Center_Y']
+    csv_columns = ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Mean_Squared_Error']
     pupil_center =[]
     
     for idx, current_index in enumerate(valid_list): 
@@ -264,7 +264,7 @@ def data_set_changer (all_image_valid_list, valid_list_xml, valid_list, annotade
             print("label for {0} is out of bound".format(img))
             continue
             
-        pupil_center.append({'ID':count, 'True_Elipse_X':label[0], 'True_Elipse_Y':label[1], 'True_Elipse_W':label[2], 'True_Elipse_H':label[3], 'True_Elipse_Alpha':label[4], 'Predict_Elipse_X':"",'Predict_Elipse_Y':"", 'Predict_Elipse_W':"", 'Predict_Elipse_H':"", 'Predict_Elipse_Alpha':"", 'True_Box_X1':"", 'True_Box_Y1':"", 'True_Box_X2':"", 'True_Box_Y2':"", 'True_Box_Center_X':"", 'True_Box_Center_Y':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"", 'Predict_Box_Center_X':"", 'Predict_Box_Center_Y':""})
+        pupil_center.append({'ID':count, 'Original_Ellipse_Center_X': "{:.4f}".format(label[0]), 'Original_Ellipse_Center_Y':"{:.4f}".format(label[1]), 'Original_Ellipse_W':"{:.4f}".format(label[2]), 'Original_Ellipse_H':"{:.4f}".format(label[3]), 'Original_Ellipse_Alpha':"{:.4f}".format(label[4]), 'Predict_Ellipse_Center_X':"",'Predict_Ellipse_Center_Y':"", 'Predict_Ellipse_W':"", 'Predict_Ellipse_H':"", 'Predict_Ellipse_Alpha':"", 'Original_Box_X1':"", 'Original_Box_Y1':"", 'Original_Box_X2':"", 'Original_Box_Y2':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"",'Ellipse_Center_Mean_Squared_Error':"" })
         create_json(count, new_path, annotaded_dir, kind_of_use, label)
         count = count + 1
         
@@ -274,7 +274,7 @@ def data_set_changer (all_image_valid_list, valid_list_xml, valid_list, annotade
             image, noise_label = noise_creator(img, label, ag)
             image, noise_label = noise_creator(img, label, ag)
             noise_label = np.asarray(noise_label, dtype=np.float32)
-            pupil_center.append({'ID':count, 'True_Elipse_X':noise_label[0], 'True_Elipse_Y':noise_label[1], 'True_Elipse_W':noise_label[2], 'True_Elipse_H':noise_label[3], 'True_Elipse_Alpha':noise_label[4],'Predict_Elipse_X':"", 'Predict_Elipse_Y':"",  'Predict_Elipse_W':"", 'Predict_Elipse_H':"", 'Predict_Elipse_Alpha':"",'True_Box_X1':"", 'True_Box_Y1':"", 'True_Box_X2':"", 'True_Box_Y2':"", 'True_Box_Center_X':"", 'True_Box_Center_Y':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"", 'Predict_Box_Center_X':"", 'Predict_Box_Center_Y':""})
+            pupil_center.append({'ID':count, 'Original_Ellipse_Center_X':"{:.4f}".format(noise_label[0]), 'Original_Ellipse_Center_Y':"{:.4f}".format(noise_label[1]), 'Original_Ellipse_W':"{:.4f}".format(noise_label[2]), 'Original_Ellipse_H':"{:.4f}".format(noise_label[3]), 'Original_Ellipse_Alpha':"{:.4f}".format(noise_label[4]),'Predict_Ellipse_Center_X':"", 'Predict_Ellipse_Center_Y':"",  'Predict_Ellipse_W':"", 'Predict_Ellipse_H':"", 'Predict_Ellipse_Alpha':"",'Original_Box_X1':"", 'Original_Box_Y1':"", 'Original_Box_X2':"", 'Original_Box_Y2':"", 'Predict_Box_X1':"", 'Predict_Box_Y1':"", 'Predict_Box_X2':"", 'Predict_Box_Y2':"",'Ellipse_Center_Mean_Squared_Error':""})
             img_3D = convert_2D_to_3D(image)
             img_3D.save(new_path)
             create_json(str(count), new_path, annotaded_dir, kind_of_use, noise_label)

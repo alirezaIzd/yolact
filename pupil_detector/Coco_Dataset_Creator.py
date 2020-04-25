@@ -24,51 +24,56 @@ except ImportError:
 
 
 
-def update_csv_result(image_index, bbox):
+def update_csv_result(images_bbox_dict):
 
     filename = './results/pupil_Detection_result/data_info.csv'
     
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
     fields = ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Mean_Squared_Error']
-    
    
-    x1 = bbox[0]
-    y1 = bbox[1]
-    x2 = bbox[2]
-    y2 = bbox[3]
-
-
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
         writer = csv.DictWriter(tempfile, fieldnames=fields)
+          
+        
         for row in reader:
         
-            if row['ID'] == str(image_index):
-   
-                row['Original_Box_X1'] = x1
-                row['Original_Box_Y1'] = y1
-                row['Original_Box_X2'] = x2
-                row['Original_Box_Y2'] = y2
+            
+            bbox = images_bbox_dict.get(row['ID'])
+            
+            
+            if  bbox!= None :
+                
+                row['Original_Box_X1'] = bbox[0]
+                row['Original_Box_Y1'] = bbox[1]
+                row['Original_Box_X2'] = bbox[2]
+                row['Original_Box_Y2'] = bbox[3]
+            
+            else :
+                row['Original_Box_X1'] = row['Original_Box_X1'] 
+                row['Original_Box_Y1'] = row['Original_Box_Y1']
+                row['Original_Box_X2'] = row['Original_Box_X2']
+                row['Original_Box_Y2'] = row['Original_Box_Y2']
 
-                
-                
-                row['Predict_Ellipse_Center_X'] =  row['Predict_Ellipse_Center_X'] 
-                row['Predict_Ellipse_Center_Y'] = row['Predict_Ellipse_Center_Y']
-                row['Predict_Ellipse_W'] = row['Predict_Ellipse_W']
-                row['Predict_Ellipse_H'] = row['Predict_Ellipse_H']
-                row['Predict_Ellipse_Alpha'] = row['Predict_Ellipse_Alpha']
-                
-                row['Original_Ellipse_Center_X'] = row['Original_Ellipse_Center_X'] 
-                row['Original_Ellipse_Center_Y'] =  row['Original_Ellipse_Center_Y'] 
-                row['Original_Ellipse_W'] =  row['Original_Ellipse_W'] 
-                row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
-                row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
-                row['Predict_Box_X1'] = row['Predict_Box_X1'] 
-                row['Predict_Box_Y1'] = row['Predict_Box_Y1'] 
-                row['Predict_Box_X2'] = row['Predict_Box_X2']
-                row['Predict_Box_Y2'] = row['Predict_Box_Y2']
-                row['Ellipse_Center_Mean_Squared_Error'] = row['Ellipse_Center_Mean_Squared_Error']
+            
+            
+            row['Predict_Ellipse_Center_X'] =  row['Predict_Ellipse_Center_X'] 
+            row['Predict_Ellipse_Center_Y'] = row['Predict_Ellipse_Center_Y']
+            row['Predict_Ellipse_W'] = row['Predict_Ellipse_W']
+            row['Predict_Ellipse_H'] = row['Predict_Ellipse_H']
+            row['Predict_Ellipse_Alpha'] = row['Predict_Ellipse_Alpha']
+            
+            row['Original_Ellipse_Center_X'] = row['Original_Ellipse_Center_X'] 
+            row['Original_Ellipse_Center_Y'] =  row['Original_Ellipse_Center_Y'] 
+            row['Original_Ellipse_W'] =  row['Original_Ellipse_W'] 
+            row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
+            row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
+            row['Predict_Box_X1'] = row['Predict_Box_X1'] 
+            row['Predict_Box_Y1'] = row['Predict_Box_Y1'] 
+            row['Predict_Box_X2'] = row['Predict_Box_X2']
+            row['Predict_Box_Y2'] = row['Predict_Box_Y2']
+            row['Ellipse_Center_Mean_Squared_Error'] = row['Ellipse_Center_Mean_Squared_Error']
            
 
             row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Mean_Squared_Error':  row['Ellipse_Center_Mean_Squared_Error'] }
@@ -123,6 +128,8 @@ def main():
     )
 
     class_name_to_id = {}
+    images_bbox_dict= dict()
+    
     for i, line in enumerate(open(args.labels).readlines()):
         class_id = i - 1  # starts with -1
         class_name = line.strip()
@@ -185,7 +192,10 @@ def main():
             points = np.asarray(points).flatten().tolist()
             segmentations[instance].append(points)
         segmentations = dict(segmentations)
-
+        
+        
+     
+        
         for instance, mask in masks.items():
             cls_name, group_id = instance
             if cls_name not in class_name_to_id:
@@ -200,7 +210,9 @@ def main():
             image_index = label_file.split("/")[-1].split(".")[0]
             
             if "test" in args.output_dir:
-                update_csv_result(image_index, bbox)
+                images_bbox_dict.update({image_index:bbox})
+              
+            
 
             data['annotations'].append(dict(
                 #id=len(data['annotations']),
@@ -212,6 +224,10 @@ def main():
                 bbox=bbox,
                 iscrowd=0,
             ))
+        
+    if "test" in args.output_dir:
+        
+        update_csv_result(images_bbox_dict)
 
     with open(out_ann_file, 'w') as f:
         json.dump(data, f)

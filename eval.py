@@ -278,7 +278,7 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
     return img_numpy
 
 
-def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_color=False, mask_alpha=0.45, fps_str="", image_idx=""):
+def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_color=False, mask_alpha=0.45, fps_str="",  image_idx=""):
     """
     Note: If undo_transform=False then im_h and im_w are allowed to be None.
     """
@@ -423,17 +423,22 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
     
         cv2.ellipse(img_numpy, ellipse, (0,0,255), 2)
         (xc,yc),(ma,MA),angle = ellipse
-        update_csv_mask_result(str(image_idx), xc, yc, ma, MA, angle)
+       
+        #update_csv_mask_result(str(image_idx), xc, yc, ma, MA, angle)
         
         cv2.rectangle(img_numpy, (x1, y1), (x2, y2), color, 1)
-       
-        update_csv_box_result(image_idx, x1, y1, x2, y2)
+      
+ 
+        #update_csv_box_result(image_idx, x1, y1, x2, y2)
         
         if  args.save_pupil_evaluate_image  == "True":
           
             cv2.imwrite(result_export_path+str(image_idx)+".jpg", img_numpy)
-                
-    return img_numpy
+    
+    maskes_data = [xc, yc, ma, MA, angle]
+    bboxes_data = [x1, y1, x2, y2]
+    
+    return img_numpy, bboxes_data, maskes_data
 
 def prep_benchmark(dets_out, h, w):
     with timer.env('Postprocess'):
@@ -471,7 +476,7 @@ def get_transformed_cat(coco_cat_id):
     return coco_cats_inv[coco_cat_id]
     
     
-def update_csv_mask_result(row_id, x, y, ma, MA, angle):
+def update_csv_mask_result(images_mask_dict):
     filename = './results/pupil_Detection_result/data_info.csv'
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
@@ -481,42 +486,56 @@ def update_csv_mask_result(row_id, x, y, ma, MA, angle):
         reader = csv.DictReader(csvfile, fieldnames=fields)
         writer = csv.DictWriter(tempfile, fieldnames=fields)
         for row in reader:
-            if row['ID'] == str(row_id):
+        
+            mask_ellipse = images_mask_dict.get(row['ID'])
+          
+            if row['ID']!= 'ID' :
+                mask_ellipse = images_mask_dict.get(int(row['ID']))
+                
+                if  mask_ellipse != None :
+    
+                    row['Predict_Ellipse_Center_X'] = float("{:.4f}".format(mask_ellipse[0]))
+                    row['Predict_Ellipse_Center_Y'] =   float("{:.4f}".format(mask_ellipse[1]))
+                    row['Predict_Ellipse_W'] =  "{:.4f}".format(mask_ellipse[2])
+                    row['Predict_Ellipse_H'] =  "{:.4f}".format(mask_ellipse[3])
+                    row['Predict_Ellipse_Alpha'] =   "{:.4f}".format(mask_ellipse[4])
+                    a = [row['Original_Ellipse_Center_X'] ,row['Original_Ellipse_Center_Y']]
+                    a = np.asarray(a, dtype=np.float32)
+                    b =[row['Predict_Ellipse_Center_X'], row['Predict_Ellipse_Center_X']]
+                    b = np.asarray(b, dtype=np.float32)
+                    row ['Ellipse_Center_Mean_Squared_Error'] = "{:.4f}".format(distance.euclidean(a, b))
+                    
 
-                row['Predict_Ellipse_Center_X'] = float("{:.4f}".format(x))
-                row['Predict_Ellipse_Center_Y'] =   float("{:.4f}".format(y))
-                row['Predict_Ellipse_W'] =  "{:.4f}".format(ma)
-                row['Predict_Ellipse_H'] =  "{:.4f}".format(MA)
-                row['Predict_Ellipse_Alpha'] =   "{:.4f}".format(angle)
+            
+            else :
+                row['Predict_Ellipse_Center_X'] = row['Predict_Ellipse_Center_X']
+                row['Predict_Ellipse_Center_Y'] =   row['Predict_Ellipse_Center_Y']
+                row['Predict_Ellipse_W'] =  row['Predict_Ellipse_W']
+                row['Predict_Ellipse_H'] =  row['Predict_Ellipse_H']
+                row['Predict_Ellipse_Alpha'] =   row['Predict_Ellipse_Alpha']
+                row ['Ellipse_Center_Mean_Squared_Error'] = row ['Ellipse_Center_Mean_Squared_Error'] 
+        
+       
                 
-                
-                
-                
-                
-                
-                row['Original_Ellipse_Center_X'] = row['Original_Ellipse_Center_X'] 
-                row['Original_Ellipse_Center_Y'] =  row['Original_Ellipse_Center_Y'] 
-                row['Original_Ellipse_W'] =  row['Original_Ellipse_W']
-                row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
-                row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
-                
-                
-                row['Original_Box_X1'] =  row['Original_Box_X1']
-                row['Original_Box_Y1'] =  row['Original_Box_Y1']
-                row['Original_Box_X2'] = row['Original_Box_X2'] 
-                row['Original_Box_Y2'] = row['Original_Box_Y2'] 
-                
-             
-                row['Predict_Box_X1'] = row['Predict_Box_X1'] 
-                row['Predict_Box_Y1'] = row['Predict_Box_Y1'] 
-                row['Predict_Box_X2'] = row['Predict_Box_X2']
-                row['Predict_Box_Y2'] = row['Predict_Box_Y2']
-                
-                a = [row['Original_Ellipse_Center_X'] ,row['Original_Ellipse_Center_Y']]
-                a = np.asarray(a, dtype=np.float32)
-                b =[row['Predict_Ellipse_Center_X'], row['Predict_Ellipse_Center_X']]
-                b = np.asarray(b, dtype=np.float32)
-                row ['Ellipse_Center_Mean_Squared_Error'] = "{:.4f}".format(distance.euclidean(a, b))
+            row['Original_Ellipse_Center_X'] = row['Original_Ellipse_Center_X'] 
+            row['Original_Ellipse_Center_Y'] =  row['Original_Ellipse_Center_Y'] 
+            row['Original_Ellipse_W'] =  row['Original_Ellipse_W']
+            row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
+            row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
+            
+            
+            row['Original_Box_X1'] =  row['Original_Box_X1']
+            row['Original_Box_Y1'] =  row['Original_Box_Y1']
+            row['Original_Box_X2'] = row['Original_Box_X2'] 
+            row['Original_Box_Y2'] = row['Original_Box_Y2'] 
+            
+         
+            row['Predict_Box_X1'] = row['Predict_Box_X1'] 
+            row['Predict_Box_Y1'] = row['Predict_Box_Y1'] 
+            row['Predict_Box_X2'] = row['Predict_Box_X2']
+            row['Predict_Box_Y2'] = row['Predict_Box_Y2']
+            
+      
  
             row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Mean_Squared_Error':  row['Ellipse_Center_Mean_Squared_Error'] }
             writer.writerow(row)
@@ -526,7 +545,7 @@ def update_csv_mask_result(row_id, x, y, ma, MA, angle):
     
 
     
-def update_csv_box_result(row_id, x1, y1, x2, y2):
+def update_csv_box_result(images_bbox_dict):
     filename = './results/pupil_Detection_result/data_info.csv'
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
@@ -535,35 +554,42 @@ def update_csv_box_result(row_id, x1, y1, x2, y2):
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
         writer = csv.DictWriter(tempfile, fieldnames=fields)
+  
         for row in reader:
-            if row['ID'] == str(row_id):
 
-               
-                
-                row['Predict_Box_X1'] =  "{:.4f}".format(float(x1))
-                row['Predict_Box_Y1'] =  "{:.4f}".format(float(y1))
-                row['Predict_Box_X2'] =  "{:.4f}".format(float(x2))
-                row['Predict_Box_Y2'] =  "{:.4f}".format(float(y2))
-                
-          
-         
-                row['Original_Ellipse_W'] =  row['Original_Ellipse_W']
-                row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
-                row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
-                
-                row['Original_Box_X1'] =  row['Original_Box_X1']
-                row['Original_Box_Y1'] =  row['Original_Box_Y1']
-                row['Original_Box_X2'] = row['Original_Box_X2'] 
-                row['Original_Box_Y2'] = row['Original_Box_Y2'] 
-     
-                
-                
-                row['Predict_Ellipse_Center_X'] =  row['Predict_Ellipse_Center_X'] 
-                row['Predict_Ellipse_Center_Y'] =  row['Predict_Ellipse_Center_Y'] 
-                row['Predict_Ellipse_W'] =  row['Predict_Ellipse_W']
-                row['Predict_Ellipse_H'] =  row['Predict_Ellipse_H'] 
-                row['Predict_Ellipse_Alpha'] =  row['Predict_Ellipse_Alpha'] 
-                row['Ellipse_Center_Mean_Squared_Error'] = row['Ellipse_Center_Mean_Squared_Error'] 
+            if row['ID']!= 'ID' :
+                bbox = images_bbox_dict.get(int(row['ID']))
+           
+                if  bbox!= None :
+                    
+                    row['Predict_Box_X1'] =  "{:.4f}".format(float( bbox[0]))
+                    row['Predict_Box_Y1'] =  "{:.4f}".format(float(bbox[1]))
+                    row['Predict_Box_X2'] =  "{:.4f}".format(float(bbox[2]))
+                    row['Predict_Box_Y2'] =  "{:.4f}".format(float(bbox[3]))
+            
+            else :
+                row['Predict_Box_X1'] = row['Predict_Box_X1'] 
+                row['Predict_Box_Y1'] = row['Predict_Box_Y1']
+                row['Predict_Box_X2'] = row['Predict_Box_X2']
+                row['Predict_Box_Y2'] = row['Predict_Box_Y2']
+
+            row['Original_Ellipse_W'] =  row['Original_Ellipse_W']
+            row['Original_Ellipse_H'] =  row['Original_Ellipse_H'] 
+            row['Original_Ellipse_Alpha'] =  row['Original_Ellipse_Alpha'] 
+            
+            row['Original_Box_X1'] =  row['Original_Box_X1']
+            row['Original_Box_Y1'] =  row['Original_Box_Y1']
+            row['Original_Box_X2'] = row['Original_Box_X2'] 
+            row['Original_Box_Y2'] = row['Original_Box_Y2'] 
+ 
+            
+            
+            row['Predict_Ellipse_Center_X'] =  row['Predict_Ellipse_Center_X'] 
+            row['Predict_Ellipse_Center_Y'] =  row['Predict_Ellipse_Center_Y'] 
+            row['Predict_Ellipse_W'] =  row['Predict_Ellipse_W']
+            row['Predict_Ellipse_H'] =  row['Predict_Ellipse_H'] 
+            row['Predict_Ellipse_Alpha'] =  row['Predict_Ellipse_Alpha'] 
+            row['Ellipse_Center_Mean_Squared_Error'] = row['Ellipse_Center_Mean_Squared_Error'] 
                 
             row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Mean_Squared_Error':  row['Ellipse_Center_Mean_Squared_Error'] }
             writer.writerow(row)
@@ -1161,6 +1187,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
     net.detect.use_fast_nms = args.fast_nms
     net.detect.use_cross_class_nms = args.cross_class_nms
     cfg.mask_proto_debug = args.mask_proto_debug
+  
 
     # TODO Currently we do not support Fast Mask Re-scroing in evalimage, evalimages, and evalvideo
     if args.image is not None:
@@ -1217,7 +1244,9 @@ def evaluate(net:Yolact, dataset, train_mode=False):
         dataset_indices.sort(key=lambda x: hashed[x])
 
     dataset_indices = dataset_indices[:dataset_size]
-
+    images_bbox_dict = dict()
+    images_mask_dict = dict()
+    
     try:
         # Main eval loop
         for it, image_idx in enumerate(dataset_indices):
@@ -1241,7 +1270,11 @@ def evaluate(net:Yolact, dataset, train_mode=False):
             # Perform the meat of the operation here depending on our mode.
             if args.display:
                 #img_numpy = prep_display(preds, img, h, w)
-                img_numpy = prep_display_eivazi_Izad(preds, img, h, w, image_idx=str(image_idx))
+                img_numpy, bbox_data , mask_data = prep_display_eivazi_Izad( preds, img, h, w, image_idx=str(image_idx))
+                images_bbox_dict.update({image_idx:  bbox_data})    
+                images_mask_dict.update({image_idx:  mask_data})    
+            
+                
                 
             elif args.benchmark:
                 prep_benchmark(preds, h, w)
@@ -1261,7 +1294,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
                 #upil_segment_img = cv2.cvtColor(gt_masks,cv2.COLOR_GRAY2RGB)
               
                 
-                
+        
                 #box_color = (0,255,0)
 #                box_text_str = '%s: %.2f' % ("Pupil Box Score", score_box)
                 #text_w, text_h = cv2.getTextSize(box_text_str, font_face, font_scale, font_thickness)[0]
@@ -1281,6 +1314,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
                 progress_bar.set_val(it+1)
                 print('\rProcessing Images  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
                     % (repr(progress_bar), it+1, dataset_size, progress, fps), end='')
+
 
 
 
@@ -1307,6 +1341,8 @@ def evaluate(net:Yolact, dataset, train_mode=False):
             avg_seconds = frame_times.get_avg()
             print('Average: %5.2f fps, %5.2f ms' % (1 / frame_times.get_avg(), 1000*avg_seconds))
 
+        update_csv_box_result(images_bbox_dict)
+        update_csv_mask_result(images_mask_dict)
     except KeyboardInterrupt:
         print('Stopping...')
 
@@ -1409,7 +1445,8 @@ if __name__ == '__main__':
 
         if args.cuda:
             net = net.cuda()
-
+   
+                
         evaluate(net, dataset)
 
 

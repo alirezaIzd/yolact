@@ -110,7 +110,7 @@ YOLACT++ pupil models :
   ```
 - Run evaluation command below:
    ```Shell
-   python eval.py --trained_model=./weights/yolact_base_205_8000.pth --score_threshold=0.15 --top_k=15 --display --save_pupil_evaluate_image=True
+   python eval.py --trained_model=./weights/yolact_base_205_8000.pth --save_pupil_evaluate_image=True
   ```
   
 ## Multi-GPU Support

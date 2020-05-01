@@ -72,7 +72,6 @@ class COCODetection(data.Dataset):
 
         self.root = image_path
         self.coco = COCO(info_file)
-       
         
         self.ids = list(self.coco.imgToAnns.keys())
         if len(self.ids) == 0 or not has_gt:
@@ -107,24 +106,21 @@ class COCODetection(data.Dataset):
                    target is the object returned by ``coco.loadAnns``.
             Note that if no crowd annotations exist, crowd will be None
         """
-        
-        img_id =str(index)
-       
+        img_id = self.ids[index]
+
         if self.has_gt:
-            
-            target = self.coco.imgToAnns[img_id]
-            
-         
-            
+            ann_ids = self.coco.getAnnIds(imgIds=img_id)
+
+            # Target has {'segmentation', 'area', iscrowd', 'image_id', 'bbox', 'category_id'}
+            target = [x for x in self.coco.loadAnns(ann_ids) if x['image_id'] == img_id]
         else:
             target = []
- 
+
         # Separate out crowd annotations. These are annotations that signify a large crowd of
         # objects of said class, where there is no annotation for each individual object. Both
         # during testing and training, consider these crowds as neutral.
         crowd  = [x for x in target if     ('iscrowd' in x and x['iscrowd'])]
         target = [x for x in target if not ('iscrowd' in x and x['iscrowd'])]
-        
         num_crowds = len(crowd)
 
         for x in crowd:
@@ -136,15 +132,15 @@ class COCODetection(data.Dataset):
         # The split here is to have compatibility with both COCO2014 and 2017 annotations.
         # In 2014, images have the pattern COCO_{train/val}2014_%012d.jpg, while in 2017 it's %012d.jpg.
         # Our script downloads the images as %012d.jpg so convert accordingly.
+        file_name = self.coco.loadImgs(img_id)[0]['file_name']
+        
+        if file_name.startswith('COCO'):
+            file_name = file_name.split('_')[-1]
 
-        
-        
-        file_name = img_id+ ".jpg"
         path = osp.join(self.root, file_name)
         assert osp.exists(path), 'Image path does not exist: {}'.format(path)
         
         img = cv2.imread(path)
-      
         height, width, _ = img.shape
         
         if len(target) > 0:
@@ -191,8 +187,7 @@ class COCODetection(data.Dataset):
             cv2 img
         '''
         img_id = self.ids[index]
-        print(img_id)
-        path = osp.join(self.root, index+".jpg")
+        path = self.coco.loadImgs(img_id)[0]['file_name']
         return cv2.imread(osp.join(self.root, path), cv2.IMREAD_COLOR)
 
     def pull_anno(self, index):

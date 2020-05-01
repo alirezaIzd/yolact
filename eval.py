@@ -409,10 +409,10 @@ def prep_display_eivazi_Izad(dets_out, img, h, w, undo_transform=True, class_col
 
     text_w, text_h = cv2.getTextSize(text_str, font_face, font_scale, font_thickness)[0]
 
-    text_pt = (x1, y1 - 3)
+    text_pt = (5, 20)
     text_color = [255, 255, 255]
 
-    cv2.rectangle(img_numpy, (x1, y1), (x1 + text_w, y1 - text_h - 4), color, -1)
+    cv2.rectangle(img_numpy, (0, 5), (5 + text_w, 10+ text_h ), color, -1)
     cv2.putText(img_numpy, text_str, text_pt, font_face, font_scale, text_color, font_thickness, cv2.LINE_AA)
         
             
@@ -480,7 +480,7 @@ def update_csv_mask_result(images_mask_dict):
     filename = './results/pupil_Detection_result/data_info.csv'
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
-    fields =  ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Mean_Squared_Error']
+    fields =  ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Euclidean_Distance']
 
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
@@ -501,9 +501,10 @@ def update_csv_mask_result(images_mask_dict):
                     row['Predict_Ellipse_Alpha'] =   "{:.4f}".format(mask_ellipse[4])
                     a = [row['Original_Ellipse_Center_X'] ,row['Original_Ellipse_Center_Y']]
                     a = np.asarray(a, dtype=np.float32)
-                    b =[row['Predict_Ellipse_Center_X'], row['Predict_Ellipse_Center_X']]
+                    b =[row['Predict_Ellipse_Center_X'], row['Predict_Ellipse_Center_Y']]
                     b = np.asarray(b, dtype=np.float32)
-                    row ['Ellipse_Center_Mean_Squared_Error'] = "{:.4f}".format(distance.euclidean(a, b))
+                    d = distance.euclidean(a, b)
+                    row ['Ellipse_Center_Euclidean_Distance'] = "{:.4f}".format(d)
                     
 
             
@@ -513,7 +514,7 @@ def update_csv_mask_result(images_mask_dict):
                 row['Predict_Ellipse_W'] =  row['Predict_Ellipse_W']
                 row['Predict_Ellipse_H'] =  row['Predict_Ellipse_H']
                 row['Predict_Ellipse_Alpha'] =   row['Predict_Ellipse_Alpha']
-                row ['Ellipse_Center_Mean_Squared_Error'] = row ['Ellipse_Center_Mean_Squared_Error'] 
+                row ['Ellipse_Center_Euclidean_Distance'] = row ['Ellipse_Center_Euclidean_Distance'] 
         
        
                 
@@ -537,7 +538,7 @@ def update_csv_mask_result(images_mask_dict):
             
       
  
-            row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Mean_Squared_Error':  row['Ellipse_Center_Mean_Squared_Error'] }
+            row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Euclidean_Distance':  row['Ellipse_Center_Euclidean_Distance'] }
             writer.writerow(row)
 
     shutil.move(tempfile.name, filename)
@@ -549,7 +550,7 @@ def update_csv_box_result(images_bbox_dict):
     filename = './results/pupil_Detection_result/data_info.csv'
     tempfile = NamedTemporaryFile(mode='w', delete=False)               
 
-    fields =  ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Mean_Squared_Error']
+    fields =  ['ID', 'Original_Ellipse_Center_X', 'Original_Ellipse_Center_Y','Original_Ellipse_W','Original_Ellipse_H','Original_Ellipse_Alpha', 'Predict_Ellipse_Center_X', 'Predict_Ellipse_Center_Y', 'Predict_Ellipse_W','Predict_Ellipse_H','Predict_Ellipse_Alpha',  'Original_Box_X1', 'Original_Box_Y1', 'Original_Box_X2', 'Original_Box_Y2','Predict_Box_X1', 'Predict_Box_Y1', 'Predict_Box_X2', 'Predict_Box_Y2','Ellipse_Center_Euclidean_Distance']
 
     with open(filename, 'r') as csvfile, tempfile:
         reader = csv.DictReader(csvfile, fieldnames=fields)
@@ -589,9 +590,9 @@ def update_csv_box_result(images_bbox_dict):
             row['Predict_Ellipse_W'] =  row['Predict_Ellipse_W']
             row['Predict_Ellipse_H'] =  row['Predict_Ellipse_H'] 
             row['Predict_Ellipse_Alpha'] =  row['Predict_Ellipse_Alpha'] 
-            row['Ellipse_Center_Mean_Squared_Error'] = row['Ellipse_Center_Mean_Squared_Error'] 
+            row['Ellipse_Center_Euclidean_Distance'] = row['Ellipse_Center_Euclidean_Distance'] 
                 
-            row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Mean_Squared_Error':  row['Ellipse_Center_Mean_Squared_Error'] }
+            row = {'ID': row['ID'], 'Original_Ellipse_Center_X':row['Original_Ellipse_Center_X'],'Original_Ellipse_Center_Y':row['Original_Ellipse_Center_Y'], 'Original_Ellipse_W': row['Original_Ellipse_W'] ,'Original_Ellipse_H': row['Original_Ellipse_H'] , 'Original_Ellipse_Alpha': row['Original_Ellipse_Alpha'] ,'Predict_Ellipse_Center_X': row['Predict_Ellipse_Center_X'],  'Predict_Ellipse_Center_Y': row['Predict_Ellipse_Center_Y'], 'Predict_Ellipse_W': row['Predict_Ellipse_W'], 'Predict_Ellipse_H': row['Predict_Ellipse_H'], 'Predict_Ellipse_Alpha': row['Predict_Ellipse_Alpha'], 'Original_Box_X1':  row['Original_Box_X1'], 'Original_Box_Y1': row['Original_Box_Y1'], 'Original_Box_X2' : row['Original_Box_X2'], 'Original_Box_Y2' : row['Original_Box_Y2'], 'Predict_Box_X1': row['Predict_Box_X1'], 'Predict_Box_Y1': row['Predict_Box_Y1'] , 'Predict_Box_X2': row['Predict_Box_X2'], 'Predict_Box_Y2':  row['Predict_Box_Y2'],'Ellipse_Center_Euclidean_Distance':  row['Ellipse_Center_Euclidean_Distance'] }
             writer.writerow(row)
 
     shutil.move(tempfile.name, filename)
@@ -1183,11 +1184,51 @@ def evalvideo(net:Yolact, path:str, out_path:str=None):
     
     cleanup_and_exit()
 
-def evaluate(net:Yolact, dataset, train_mode=False):
+def evaluate_eivazi_izad(net:Yolact, dataset, train_mode=False):
+    print("You Should Wait")
     net.detect.use_fast_nms = args.fast_nms
     net.detect.use_cross_class_nms = args.cross_class_nms
     cfg.mask_proto_debug = args.mask_proto_debug
   
+    dataset_indices = list(range(len(dataset)))   
+    dataset_ids_int = list(map(int, dataset.ids))
+    dataset_indices = dataset_ids_int
+    
+    images_bbox_dict = dict()
+    images_mask_dict = dict()
+    
+    try:
+        # Main eval loop
+        for it, image_idx in enumerate(dataset_indices):
+            timer.reset()
+            
+     
+            with timer.env('Load Data'):
+                 
+                img, gt, gt_masks, h, w, num_crowd = dataset.pull_item(image_idx)
+           
+                batch = Variable(img.unsqueeze(0))
+                if args.cuda:
+                    batch = batch.cuda()
+
+            with timer.env('Network Extra'):
+                preds = net(batch)
+
+            img_numpy, bbox_data , mask_data = prep_display_eivazi_Izad( preds, img, h, w, image_idx=str(image_idx))
+            images_bbox_dict.update({image_idx:  bbox_data})    
+            images_mask_dict.update({image_idx:  mask_data})    
+
+        update_csv_box_result(images_bbox_dict)
+        update_csv_mask_result(images_mask_dict)
+        print("Job Is Finish")
+    except KeyboardInterrupt:
+        print('Stopping...')
+
+
+def evaluate(net:Yolact, dataset, train_mode=False):
+    net.detect.use_fast_nms = args.fast_nms
+    net.detect.use_cross_class_nms = args.cross_class_nms
+    cfg.mask_proto_debug = args.mask_proto_debug
 
     # TODO Currently we do not support Fast Mask Re-scroing in evalimage, evalimages, and evalvideo
     if args.image is not None:
@@ -1239,14 +1280,11 @@ def evaluate(net:Yolact, dataset, train_mode=False):
         # the hardest. To combat this, I use a hard-coded hash function based on the image ids
         # to shuffle the indices we use. That way, no matter what python version or how pycocotools
         # handles the data, we get the same result every time.
-     
         hashed = [badhash(x) for x in dataset.ids]
         dataset_indices.sort(key=lambda x: hashed[x])
 
     dataset_indices = dataset_indices[:dataset_size]
-    images_bbox_dict = dict()
-    images_mask_dict = dict()
-    
+
     try:
         # Main eval loop
         for it, image_idx in enumerate(dataset_indices):
@@ -1269,13 +1307,7 @@ def evaluate(net:Yolact, dataset, train_mode=False):
                 preds = net(batch)
             # Perform the meat of the operation here depending on our mode.
             if args.display:
-                #img_numpy = prep_display(preds, img, h, w)
-                img_numpy, bbox_data , mask_data = prep_display_eivazi_Izad( preds, img, h, w, image_idx=str(image_idx))
-                images_bbox_dict.update({image_idx:  bbox_data})    
-                images_mask_dict.update({image_idx:  mask_data})    
-            
-                
-                
+                img_numpy = prep_display(preds, img, h, w)
             elif args.benchmark:
                 prep_benchmark(preds, h, w)
             else:
@@ -1289,24 +1321,9 @@ def evaluate(net:Yolact, dataset, train_mode=False):
             if args.display:
                 if it > 1:
                     print('Avg FPS: %.4f' % (1 / frame_times.get_avg()))
-                #print(box)
-              
-                #upil_segment_img = cv2.cvtColor(gt_masks,cv2.COLOR_GRAY2RGB)
-              
-                
-        
-                #box_color = (0,255,0)
-#                box_text_str = '%s: %.2f' % ("Pupil Box Score", score_box)
-                #text_w, text_h = cv2.getTextSize(box_text_str, font_face, font_scale, font_thickness)[0]
-                #text_pt = (5, 15)
-                #cv2.putText(img, box_text_str, text_pt, font_face, font_scale, box_color, font_thickness, cv2.LINE_AA) 
-                #cv2.rectangle(img, x1,y1, x2,y2, box_color, 1)
-                #cv2.imwrite(str(dataset.ids[image_idx])+"_mask.jpg", pupil_segment_img)
-                #plt.imshow(img_numpy)
-                #cv2.imwrite(str(dataset.ids[image_idx])+".jpg", img)
-                #plt.title(str(dataset.ids[image_idx]))
-                #plt.title(str(dataset.ids[image_idx]))
-                #plt.show()
+                plt.imshow(img_numpy)
+                plt.title(str(dataset.ids[image_idx]))
+                plt.show()
             elif not args.no_bar:
                 if it > 1: fps = 1 / frame_times.get_avg()
                 else: fps = 0
@@ -1314,7 +1331,6 @@ def evaluate(net:Yolact, dataset, train_mode=False):
                 progress_bar.set_val(it+1)
                 print('\rProcessing Images  %s %6d / %6d (%5.2f%%)    %5.2f fps        '
                     % (repr(progress_bar), it+1, dataset_size, progress, fps), end='')
-
 
 
 
@@ -1341,8 +1357,6 @@ def evaluate(net:Yolact, dataset, train_mode=False):
             avg_seconds = frame_times.get_avg()
             print('Average: %5.2f fps, %5.2f ms' % (1 / frame_times.get_avg(), 1000*avg_seconds))
 
-        update_csv_box_result(images_bbox_dict)
-        update_csv_mask_result(images_mask_dict)
     except KeyboardInterrupt:
         print('Stopping...')
 
@@ -1413,7 +1427,7 @@ if __name__ == '__main__':
 
     if args.dataset is not None:
         set_dataset(args.dataset)
-
+        
     with torch.no_grad():
         if not os.path.exists('results'):
             os.makedirs('results')
@@ -1436,7 +1450,7 @@ if __name__ == '__main__':
             prep_coco_cats()
         else:
             dataset = None        
-
+        
         print('Loading model...', end='')
         net = Yolact()
         net.load_weights(args.trained_model)
@@ -1447,6 +1461,7 @@ if __name__ == '__main__':
             net = net.cuda()
    
                 
-        evaluate(net, dataset)
+        #evaluate(net, dataset)
+        evaluate_eivazi_izad(net, dataset)
 
 
